@@ -6,7 +6,8 @@ function seq_location(element, width, height, seqs, options = null) {
 		"bgcolor": "white",
 		"padding": 6,
 		"lineheight": "16px",
-		"labelfont": "12px \"Lucida Console\", Monaco, monospace"
+		"labelfont": "12px \"Lucida Console\", Monaco, monospace",
+		"linecolor": "black"
 	};
 	
 	var settings = {};
@@ -25,14 +26,14 @@ function seq_location(element, width, height, seqs, options = null) {
 			downstreamend = seqs[i]['end'];
 		}
 	}	
-	upstreamstrt = upstreamstrt - (0.1*upstreamstrt);
-	downstreamend = downstreamend + (0.1*downstreamend);	
+	upstreamstrt = upstreamstrt - (0.2*upstreamstrt);
+	downstreamend = downstreamend + (0.2*downstreamend);
+	streamdelta = downstreamend - upstreamstrt;
 	
-	// height and width of canvas
-	totalheight = seqs.length * height;
-	console.log(totalheight);
-	element.width = width;
-	element.height = totalheight;
+	console.log("upstream start: "+ upstreamstrt);
+	console.log("downstream end: "+ downstreamend);
+	console.log("stream delta: "+streamdelta);
+	
 	
 	// box model calculations
 	textboxheight = height - (2*settings.padding);
@@ -40,16 +41,52 @@ function seq_location(element, width, height, seqs, options = null) {
 	strandboxheight = height - (2*settings.padding);
 	strandboxwidth = 0.8 * width - (2*settings.padding);
 	sendsestrandheight = Math.floor(strandboxheight/2);
+	pixel2strand = Math.floor(strandboxwidth/streamdelta);
 	
-	// start drawing text	
+	// setup canvas element
+	totalheight = seqs.length * height;
+	element.width = width;
+	element.height = totalheight;
 	var ctx = element.getContext("2d");
 	ctx.save();
+	
 	for(i=0;i<seqs.length;i++) {
+		// draw sequence location labels
+		ctx.fillStyle="black";
+		ctx.font = settings.labelfont;
 		var p = settings.padding*(2*i+1);
 		var wraptextx = (p+(textboxheight*(i+1)))-(textboxheight/2);
-		wrapText(ctx, seqs[i]['sequence_id'], settings.padding, wraptextx, textboxwidth, settings.lineheight);
+		ctx.fillText(seqs[i]['Feature_id'], settings.padding, wraptextx);
 		ctx.save();
-	}
+		
+		// draw strand diagram line and sense labels		
+		ctx.font = "16px \"Lucida Console\", Monaco, monospace";		
+		ctx.fillText("+",Math.floor(((0.2*width)+settings.padding)),Math.floor(((height/2)-8)+(height*i)));
+		ctx.fillText("-",Math.floor(((0.2*width)+settings.padding)),Math.floor(((height/2)+14)+(height*i)));
+		ctx.save();
+		ctx.beginPath();
+		ctx.moveTo(Math.floor(0.2*width),Math.floor((height/2)+(height*i)));
+		ctx.lineTo(width,Math.floor((height/2)+(height*i)));
+		ctx.lineWidth = 1;
+		ctx.strokeStyle = settings.linecolor;
+		ctx.stroke();
+		
+		// draw seqence location blocks
+		var seqstart = seqs[i]['start'];
+		var seqend = seqs[i]['end'];
+		var deltatostart = pixel2strand * (seqstart - upstreamstrt);
+		
+		var deltatoend = pixel2strand * (seqend - upstreamstrt);
+		var boxdelta = deltatoend - deltatostart;		
+		var seqboxx = 20 + deltatostart + (0.2*width) + (settings.padding);		
+		var seqboxy = (seqs[i]["orientation"] == "+") ? ((height/2)+(i*height)-20) : ((height/2)+(i*height)+5);		
+		var seqboxheight = 15;
+		var seqboxwidth = boxdelta;
+		
+		ctx.fillStyle = (seqs[i]["orientation"] == "+") ? "green" : "blue";
+		ctx.fillRect(seqboxx, seqboxy, seqboxwidth, seqboxheight);
+		ctx.save();
+	}	
 }
 
 function wrapText(context, text, x, y, maxWidth, lineHeight) {
