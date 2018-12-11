@@ -31,6 +31,10 @@
   };
 })(CanvasRenderingContext2D);
 
+function randomcolor() {
+	return '#'+(Math.random()*0xFFFFFF<<0).toString(16);
+}
+
 function seq_location(element, width, height, seqs, options = null) {
 	// Get setttings from options or default values.
 	var defaults = {
@@ -48,6 +52,10 @@ function seq_location(element, width, height, seqs, options = null) {
 		settings[p] = (options[p] == null) ? defaults[p] : options[p];
 	}
 	
+	if(typeof window.motifcolors == 'undefined') {
+		window.motifcolors = {};
+	}
+	
 	// stat collection
 	var upstreamstrt = 0;
 	var downstreamend = 0;
@@ -57,26 +65,35 @@ function seq_location(element, width, height, seqs, options = null) {
 		for(const [motif, locations] of matches) {
 			for(i=0;i<locations.length;i++) {
 				// 0: start, 1:end, 2:orientation
-				if(locations[i][0] < upstreamstrt) {
-					upstreamstrt = locations[i][0];
-				}
-				if(locations[i][1] > downstreamend) {
-					downstreamend = locations[i][1];
+				if(locations[i][0] < locations[i][1]) { // if start < end 5'=> 3'					
+					if(locations[i][0] < upstreamstrt) {
+						upstreamstrt = locations[i][0];
+					}
+					if(locations[i][1] > downstreamend) {
+						downstreamend = locations[i][1];
+					}
+				} else { // but if end < start 3'->5'
+					if(locations[i][1] < upstreamstrt) {
+						upstreamstrt = locations[i][1];
+					}
+					if(locations[i][0] > downstreamend) {
+						downstreamend = locations[i][0];
+					}
 				}
 			}
 		}
 	}
 	
-	streamdelta = downstreamend - upstreamstrt;
-	upstreamstrt = upstreamstrt - Math.floor(0.05*streamdelta);
-	downstreamend = downstreamend + Math.floor(0.05*streamdelta);
-	streamdelta = downstreamend - upstreamstrt;
+	var streamdelta = downstreamend - (upstreamstrt);
+	upstreamstrt = upstreamstrt - Math.floor(0.2*streamdelta);
+	downstreamend = downstreamend + Math.floor(0.2*streamdelta);
+	streamdelta = downstreamend - (upstreamstrt);
 	
 	// box model calculations
 	textboxheight = height - (2*settings.padding);
 	textboxwidth = 0.2 * width - (2*settings.padding);	
 	strandboxheight = height - (2*settings.padding);
-	strandboxwidth = 0.8 * width - (2*settings.padding);
+	strandboxwidth = (0.8*width)-((2*settings.padding)+20);
 	sendsestrandheight = Math.floor(strandboxheight/2);
 	pixel2strand = Math.floor(strandboxwidth/streamdelta);
 	
@@ -112,20 +129,40 @@ function seq_location(element, width, height, seqs, options = null) {
 		const matches = Object.entries(motifs);
 		for(const [motif, locations] of matches) {
 			for(i=0;i<locations.length;i++) {
-				// 0: start, 1:end, 2:orientation
-				// draw seqence location blocks
-				var seqstart = locations[i][0];
-				var seqend = locations[i][1];
-				var deltatostart = pixel2strand * (seqstart - upstreamstrt);					
-				var deltatoend = pixel2strand * (seqend - upstreamstrt);
-				var boxdelta = deltatoend - deltatostart;		
-				var seqboxx = 20 + deltatostart + (0.2*width) + (settings.padding);		
-				var seqboxy = (locations[i][2] == "+") ? ((height/2)+(seqnum*height)-10) : ((height/2)+(seqnum*height)+10);
+				/* 
+					Calculations for sequence motif box models.
+					pixel2strand - ratio of pixels to nucleotides on the current strand model -a
+					px2start - pixels from beginning of strand diagram to start of motifbox
+					pxofstrand - pixel length of the motif box
+				*/
+				var seqboxy = (locations[i][2] == "+") ? ((height/2)+(seqnum*height)-22) : ((height/2)+(seqnum*height)+7);
+				var px2start = (locations[i][0] < locations[i][1]) ? (pixel2strand*(locations[i][0]-upstreamstrt)) : (pixel2strand*(locations[i][1]-upstreamstrt));
+				var seqboxx = ((0.2*width)+20+settings.padding)+px2start;
+				
+				var pxofstrand = (locations[i][0] < locations[i][1]) ? (pixel2strand*(locations[i][1]-upstreamstrt)) : (pixel2strand*(locations[i][0]-upstreamstrt));
+				var seqboxwidth = pxofstrand - px2start;
 				var seqboxheight = 15;
-				var seqboxwidth = boxdelta;
-							
-				ctx.fillStyle = (locations[i][2] == "+") ? "green" : "blue";
-				//ctx.fillRect(seqboxx, seqboxy, seqboxwidth, seqboxheight);
+				
+				ctx.fillStyle = "#000";
+				ctx.fillRect(seqboxx-2, seqboxy-2, seqboxwidth+4, seqboxheight+4);			
+				if(typeof window.motifcolors[motif] == 'undefined') {
+					do {
+						var rndclr = randomcolor();
+						var c = rndclr.substring(1);      // strip #
+						var rgb = parseInt(c, 16);   // convert rrggbb to decimal
+						var r = (rgb >> 16) & 0xff;  // extract red
+						var g = (rgb >>  8) & 0xff;  // extract green
+						var b = (rgb >>  0) & 0xff;  // extract blue
+						var luma = 0.2126 * r + 0.7152 * g + 0.0722 * b; // per ITU-R BT.709
+					}
+					while(luma < 40 || luma > 200 || rndclr.length < 7);			
+					ctx.fillStyle = rndclr;
+					window.motifcolors[motif] = rndclr;
+				} else {
+					ctx.fillStyle = window.motifcolors[motif];
+				}				
+				ctx.fillRect(seqboxx, seqboxy, seqboxwidth, seqboxheight);
+				/* Arrow drawing
 				ctx.beginPath();
 				var arrowctlpts = [0,3,-10,3,-10,6];
 				if (locations[i][2] == "+") {
@@ -133,6 +170,7 @@ function seq_location(element, width, height, seqs, options = null) {
 				} else {
 					ctx.arrow((seqboxx+seqboxwidth), seqboxy, seqboxx, seqboxy, arrowctlpts);
 				}
+				*/
 				ctx.fill();
 				ctx.save();
 			}
