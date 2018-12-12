@@ -42,8 +42,10 @@ function seq_location(element, width, height, seqs, options = null) {
 		"textcolor": "black",
 		"bgcolor": "white",
 		"padding": 6,
+		"legendheight": 150,
 		"lineheight": "16px",
 		"labelfont": "12px \"Lucida Console\", Monaco, monospace",
+		"legendfont": "14px \"Lucida Console\", Monaco, monospace",
 		"linecolor": "black"
 	};
 	
@@ -98,7 +100,12 @@ function seq_location(element, width, height, seqs, options = null) {
 	pixel2strand = Math.floor(strandboxwidth/streamdelta);
 	
 	// setup canvas element
-	totalheight = (Object.keys(seqs).length) * height;
+	var legdfontsize = Number((settings.legendfont).substring(0,2));
+	var legendheight = (Object.keys(window.motifcolors).length == 0) ? legdfontsize + (2*settings.padding) : (Math.ceil((Object.keys(window.motifcolors).length+1)/2) * legdfontsize) + (2*settings.padding) + (2*Math.floor(2%Object.keys(window.motifcolors).length));
+	var legendwidth = width-(2*settings.padding);
+	var legendstartx = 0+settings.padding;
+	var legendstarty = (Object.keys(seqs).length) * height + settings.padding;
+	totalheight = (Object.keys(seqs).length) * height + settings.legendheight;
 	element.width = width;
 	element.height = totalheight;
 	var ctx = element.getContext("2d");
@@ -169,13 +176,40 @@ function seq_location(element, width, height, seqs, options = null) {
 					ctx.arrow(seqboxx, seqboxy, (seqboxx+seqboxwidth), seqboxy, arrowctlpts);
 				} else {
 					ctx.arrow((seqboxx+seqboxwidth), seqboxy, seqboxx, seqboxy, arrowctlpts);
-				}
-				*/
+				}	*/
 				ctx.fill();
 				ctx.save();
 			}
-		}
-		
+		}	
 		seqnum++;
-	}	
+		ctx.save();
+	}
+	ctx.save();
+	
+	// draw legend
+	ctx.fillStyle = "#000";
+	ctx.fillRect(legendstartx-(settings.padding/2), legendstarty-(settings.padding/2), legendwidth+(settings.padding), legendheight);
+	ctx.fillStyle = "#fff";
+	ctx.fillRect(legendstartx, legendstarty, legendwidth, legendheight-(settings.padding));
+	ctx.fillStyle = "#000";
+	ctx.font = settings.legendfont;	
+	legendstarty = legendstarty + legdfontsize;
+	legendstartx = legendstartx + (settings.padding);
+	
+	const legendentries = Object.entries(window.motifcolors);
+	var legendline = 0;
+	for(const [motif, color] of legendentries) {
+		if(((legendline+1) % 2) == 0) {
+			ctx.fillStyle = color;
+			ctx.fillRect(legendstartx+(legendwidth/2), legendstarty+(settings.padding*(legendline-1)+(2*legendline-1))-legdfontsize+2, legdfontsize, legdfontsize);
+			ctx.fillStyle = "#000";
+			ctx.fillText(motif, legendstartx+legdfontsize+settings.padding+(legendwidth/2), legendstarty+(settings.padding*(legendline-1))+(2*legendline-1));
+		} else {
+			ctx.fillStyle = color;
+			ctx.fillRect(legendstartx, (legendstarty+(settings.padding*legendline)+(2*legendline))-legdfontsize+2, legdfontsize, legdfontsize);
+			ctx.fillStyle = "#000";
+			ctx.fillText(motif, legendstartx+legdfontsize+settings.padding, legendstarty+(settings.padding*legendline)+(2*legendline));
+		}
+		legendline++;
+	}
 }
