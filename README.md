@@ -14,14 +14,14 @@ Simple Javascript sequence block location visualization using vanilla JS.
         <script src="js/jseqlocation.js"></script>
         <script>
             var columns = {
-							sequence: {
-								// start, end, strand sense(orientation)
-								[5, 56, "+"],
-								[550, 560, "+"],
-								[255, 235, "-"],
-								[100, 85. "-"]								
-							}
-						};						
+			    sequence: {
+				    // start, end, strand sense(orientation)
+					[5, 56, "+"],
+					[550, 560, "+"],
+					[255, 235, "-"],
+					[100, 85. "-"]								
+				}
+			};						
 
             var options = {
                 "ymax": 1
