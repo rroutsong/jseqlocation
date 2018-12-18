@@ -87,8 +87,8 @@ function seq_location(element, width, height, seqs, options = null) {
 	}
 	
 	var streamdelta = downstreamend - (upstreamstrt);
-	upstreamstrt = upstreamstrt - Math.floor(0.2*streamdelta);
-	downstreamend = downstreamend + Math.floor(0.2*streamdelta);
+	upstreamstrt = upstreamstrt - Math.floor(0.05*streamdelta);
+	downstreamend = downstreamend + Math.floor(0.05*streamdelta);
 	streamdelta = downstreamend - (upstreamstrt);
 	
 	// box model calculations
@@ -97,7 +97,7 @@ function seq_location(element, width, height, seqs, options = null) {
 	strandboxheight = height - (2*settings.padding);
 	strandboxwidth = (0.8*width)-((2*settings.padding)+20);
 	sendsestrandheight = Math.floor(strandboxheight/2);
-	pixel2strand = Math.floor(strandboxwidth/streamdelta);
+	pixel2strand = strandboxwidth/streamdelta;
 	
 	// setup canvas element
 	var legdfontsize = Number((settings.legendfont).substring(0,2));
