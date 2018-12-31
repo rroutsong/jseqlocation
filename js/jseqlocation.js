@@ -1,3 +1,4 @@
+/*
 // from https://github.com/frogcat/canvas-arrow
 (function(target) {
   if (!target || !target.prototype)
@@ -30,6 +31,17 @@
     }
   };
 })(CanvasRenderingContext2D);
+*/
+
+function loadScript(url, callback) {
+	var head = document.head;
+	var script = document.createElement('script');
+	script.type = 'text/javascript';
+	script.src = url;
+	script.onreadystatechange = callback;
+	script.onload = callback;
+	head.appendChild(script);
+}
 
 function randomcolor() {
 	return '#'+(Math.random()*0xFFFFFF<<0).toString(16);
@@ -46,7 +58,8 @@ function seq_location(element, width, height, seqs, options = null) {
 		"lineheight": "16px",
 		"labelfont": "12px \"Lucida Console\", Monaco, monospace",
 		"legendfont": "14px \"Lucida Console\", Monaco, monospace",
-		"linecolor": "black"
+		"linecolor": "black",
+		"ensemble": false
 	};
 	
 	var settings = {};
@@ -56,6 +69,16 @@ function seq_location(element, width, height, seqs, options = null) {
 	
 	if(typeof window.motifcolors == 'undefined') {
 		window.motifcolors = {};
+	}
+	
+	if(settings.ensemble) {
+		var ensemblecallback = function(element, width, height, seqs, settings) {
+			locationensemble(element, width, height, seqs, settings);
+		}
+		
+		loadScript('jseqlocation/js/ensemble/location.js', ensemblecallback);
+		
+		return;
 	}
 	
 	// stat collection
